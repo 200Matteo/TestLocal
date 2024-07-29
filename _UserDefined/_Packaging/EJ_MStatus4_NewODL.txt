@@ -1,0 +1,42 @@
+Me.MachineStatus.Status = 0;
+Me.MachineStatus.Timeout = 0;
+
+LogMessage(Me.Tagname+" - new Order ready to start ");
+
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+dim commandText as string;
+
+try
+
+	Me.ProdCapability.JobExec.WorkOrder = Me.UI.Wo;
+	Me.ProdCapability.JobExec.Operation = Me.UI.Operation;
+
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	connection.Open();
+	commandText = "EXEC LM_PlacementMachine '" + Me.Tagname + "','" + Me.UI.Wo + "'," + Me.UI.Operation;
+
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+
+	reader = command.ExecuteReader();
+
+	if(reader.HasRows) then
+		reader.Read();
+		Me.UI.Item = reader("item_id")+" - "+reader("item_desc");
+		Me.UI.Lot = reader("lot");
+		Me.UI.QtyReq = System.Int32.Parse(reader("req_qty"));
+		Me.UI.PlannedEnd = System.DateTime.Parse(reader("DataFine"));
+		Me.UI.Disp = reader("disp");
+		Me.UI.ItemColor = reader("item_color");
+		Me.UI.ItemSize = System.Double.Parse(reader("item_size"));
+		Me.UI.ItemSpecWeight = System.Double.Parse(reader("item_spec_weight"));
+		Me.ProdCapability.JobExec.SequenceNumber = reader("SequenceNumber");
+	endif;
+
+	reader.Close();
+	connection.Close();
+	connection.Dispose();
+catch
+	LogError(error);
+endtry;

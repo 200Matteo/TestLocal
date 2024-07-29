@@ -1,0 +1,78 @@
+LogMessage(Me.Tagname + " Start To Disp: "+Me.SCADA.STARTTODISP+" - Wo = "+Me.UI.Wo);
+
+indexDelimeter = 0;
+startToDisp = Me.SCADA.STARTTODISP;
+Me.SCADA.STARTTODISP = "";
+
+if(Me.UI.Wo<> "") then
+	try
+		while indexDelimeter >= 0
+			indexDelimeter = startToDisp.IndexOf("|");
+			if(indexDelimeter > 0) then
+				item = startToDisp.Substring(0,indexDelimeter);
+				startToDisp = startToDisp.Substring(indexDelimeter+1);
+			else
+				item = startToDisp;
+			endif;
+
+			'indexDelimeter = endToDisp.IndexOf(",");
+			tempData = item.IndexOf(",");
+			if(tempData > 0) then
+				'First element = ItemId
+				itemId = item.Substring(0,tempData);
+				tempStr = item.Substring(tempData+1); 'sarebbe la stinga che rimane a destra del |
+				tempData = tempStr.IndexOf(","); 'sarebbe il nuovo index delimiter
+				if(tempData > 0) then
+					'Second element
+					tempStr = tempStr.Substring(tempData +1);		
+					tempData = tempStr.IndexOf(",");
+					if(tempData > 0) then
+						'third element
+						qtyStr = tempStr.Substring(0,tempData);
+					else
+						LogError("No qty in the STARTTODISP Tag. STARTTODISP = "+item);
+					endif;
+
+				else
+					LogError("No qty in the STARTTODISP Tag. STARTTODISP = "+item);
+				endif;
+			else
+				LogError("No qty in the STARTTODISP Tag. STARTTODISP = "+item);
+			endif;
+
+			'update actual Bom position
+			connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+			connection.Open();
+			
+			woId = Me.UI.Wo;
+			commandText = "EXECUTE [dbo].LM_CheckBomItems '"+ woId +"','" + itemId +"',1"; 
+
+			LogMessage("***QUERY LM_CheckBomItems: " + commandText);
+
+			command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+			reader = command.ExecuteReader();
+			
+			if(reader.HasRows) then
+				reader.Read();
+				Me.SCADA.ActualBomPos = reader("bom_pos");
+			else
+				LogError("STARTTODISP No bom_pos for wo_id = "+woId);
+			endif;
+			reader.Close();
+			connection.Close();
+			connection.Dispose();
+
+			if(Me.ProductionState == 1 or Me.Status == 0) then
+				'Set Running status
+				Me.UCO.ReasonCode = "";
+				Me.MachineStatus.BeforeStartProd = 1;
+			endif;
+		endwhile;
+	catch
+		LogError(error);
+		if(connection.State == System.Data.ConnectionState.Open) then
+			connection.Close();
+			connection.Dispose();
+		endif;
+	endtry;
+endif;

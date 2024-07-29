@@ -1,0 +1,43 @@
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+dim commandText as string;
+
+LogMessage(Me.Tagname);
+Me.UCO.Operator = Me.UI.OperatorId;
+
+if(Me.OnScanOperator == false) then
+	Me.OnScanOperator = true;
+else
+	Me.UI.OperatorIn = System.DateTime.Now;
+	dim operatorIn as time;
+	dim type as integer;
+	dim operator as integer;
+	operatorIn = Me.UI.OperatorIn;
+	
+	if(Me.UI.OperatorId == 0) then
+		type = 0;
+		operator = Me.Temp.LastOperator;
+	else
+		type = 1;
+		operator = Me.UI.OperatorId;
+		Me.Temp.LastOperator = operator;
+	endif;
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	connection.Open();
+	commandText = "EXEC LM_LogOperator " + operator + ",'" + operatorIn.ToString("yyyyMMdd HH:mm:ss")+ "',"+type+",'"+Me.Tagname+"',1";
+	
+	LogMessage("***QUERY OPERATOR: " + commandText);
+
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	
+	reader = command.ExecuteReader();
+
+	if(reader.HasRows) then
+		reader.Read();
+		Me.UI.Operator = reader("OperatorName");
+	endif;
+
+	reader.Close();
+	connection.Close();
+endif;

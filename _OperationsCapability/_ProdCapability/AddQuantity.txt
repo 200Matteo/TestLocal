@@ -1,0 +1,13 @@
+dim qta as double;
+
+Me.AddQty= false;
+try
+	qta = Me.Counter;
+
+	Me.JobExec.JobPos0.Prod.GoodProduction.AddProdQtyAbs = qta;
+	LogMessage("qta to add = "+Me.JobExec.JobPos0.Prod.GoodProduction.AddProdQtyAbs+ " - command "+Me.JobExec.JobPos0.Prod.GoodProduction.AddProdQtyAbsCmd);
+	Me.JobExec.JobPos0.Prod.GoodProduction.AddProdQtyAbsCmd = true;
+
+catch
+	LogError(error);
+endtry;

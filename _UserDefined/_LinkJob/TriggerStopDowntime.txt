@@ -1,0 +1,7 @@
+LogMessage("StopDownTime ");
+
+Me.Status = 0;
+
+Me.ReasonCode = "";
+
+Me.Trigger.StopDownTime = 0;

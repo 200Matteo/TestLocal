@@ -1,0 +1,39 @@
+Me.PauseJob = false;
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+dim commandText as string;
+dim state_cd as integer;
+
+connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+try
+	connection.Open();
+	commandText = "SELECT state_cd FROM [LM_SanMarco_MES].[dbo].[vw_job_data] where wo_id = '" + Me.JobExec.WorkOrder + "' and oper_id = '"+Me.JobExec.JobPos0.CurOperId+"'";
+
+	LogMessage("***QUERY state_cd: " + commandText);
+
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	reader = command.ExecuteReader();
+
+	if(reader.HasRows) then
+		reader.Read();
+		state_cd = System.Int32.Parse(reader("state_cd"));
+	endif;
+
+	reader.Close();
+
+	if (state_cd == 3) then '3=RUNNING
+		Me.MES.Trigger.Pause = true;
+		Me.JobExec.PauseJobCmd = true;
+	else
+		LogWarning("Pause command to job not running, state_cd: " + state_cd+" - job = "+Me.JobExec.JobPos0.CurWoId+" - "+Me.JobExec.JobPos0.CurOperId);
+	endif;
+	connection.Close();
+	connection.Dispose();
+catch
+	LogError(error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

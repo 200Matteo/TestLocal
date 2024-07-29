@@ -1,0 +1,33 @@
+Me.Job.AddEndProdAttr = false;
+
+dim aaResult as aaMES.Result;
+Dim clientType As Integer ;
+Dim DS as System.Data.DataSet;
+dim sessionId as integer;
+dim sessionIdOk as boolean;
+
+'Get or create new session for client data editor
+clientType = aaMES.Core.aaClientTypes.clientDataEditor;
+aaResult = aaMES.Core.aaSession.GetSessions(Null , clientType, Null );
+if(aaResult.Success) then
+	DS = aaResult.DataSet_Value;
+	if(DS.Tables(0).Rows.Count>0) then
+		sessionId = DS.Tables(0).Rows(0).Item("session_id");
+		sessionIdOk = true;
+	else
+		aaResult = aaMES.Core.aaSession.StartSession(clientType, sessionId);
+		if(aaResult.Success) then
+			sessionIdOk = true;
+		endif;
+	endif;
+else
+	LogError("Error getting sessions for client type data editor");
+endif;
+
+dim moId as string;
+'attr 14: 1 = produced, 2 = after packaging
+aaResult = aaMES.Prod.aaJobAttr.Add(sessionId,Me.Job.Wo,Me.Job.OperId,Me.Job.SeqNo,14,"1","Added from "+Me.Tagname,"",moId);
+
+if(aaResult.Success <> true) then
+	LogError("Error adding job attr");
+endif;

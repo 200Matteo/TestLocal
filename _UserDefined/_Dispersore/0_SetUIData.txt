@@ -1,0 +1,102 @@
+Me.Trigger.SetUIData = false;
+
+LogMessage(Me.Tagname);
+
+'Set UI Data
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+dim commandText as string;
+dim woId as string;
+dim operId as integer;
+dim entity as string;
+try
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	connection.Open();
+	entity = Me.Tagname;
+	
+	woId = Me.UI.Wo;
+	operId = Me.UI.Operation;
+
+	if Me.Testing.MES.TriggerPauseTesting==3 then 
+
+		commandText = "EXECUTE [dbo].[LM_GetOrderDetailsData] '"+woId+"',0,'" + entity + "',1" ; 
+		LogMessage("***QUERY Get Order Detail data: " + commandText);
+
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		reader = command.ExecuteReader();
+		
+		if(reader.HasRows) then
+			reader.Read();
+			Me.UI.Item = reader("item_id")+" - "+reader("item_desc");
+			Me.UI.QtyReq = reader("req_qty");
+			Me.UI.Lot = reader("lot");
+			Me.UI.PlannedEnd = reader("plannedEnd");
+			Me.UI.Operation  = reader("oper_id");
+		else
+			LogError("No data for wo id = "+woId);
+		endif;
+		reader.Close();
+		
+
+		Me.ProdCapability.JobExec.WorkOrder = Me.UI.Wo;
+		Me.ProdCapability.JobExec.Operation = Me.UI.Operation;
+
+		commandText = "EXEC LM_PlacementMachine '" + Me.Tagname + "','" + Me.UI.Wo + "'," + Me.UI.Operation;
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		LogMessage("***QUERY LM_PlacementMachine: " + commandText);
+		reader = command.ExecuteReader();
+
+		if(reader.HasRows) then
+			reader.Read();
+			Me.ProdCapability.JobExec.SequenceNumber = reader("SequenceNumber");
+		endif;
+
+		reader.Close();
+		
+
+		connection.Close();
+		connection.Dispose();
+
+		'manage Job status (end last job + start new job) - this condition is after start prod event (SetUIData triggered by StartProd script)
+		Me.ProdCapability.StartJob = true;
+
+	else
+		commandText = "EXECUTE [dbo].[LM_GetOrderDetailsData] '"+woId+"',0,'" + entity + "'" ; 'finch� wingman non passa l'operazione lascio zero
+	 
+		LogMessage("***QUERY Get Order Detail data: " + commandText);
+
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		reader = command.ExecuteReader();
+		
+		if(reader.HasRows) then
+			reader.Read();
+			Me.UI.Item = reader("item_id")+" - "+reader("item_desc");
+			Me.UI.QtyReq = reader("req_qty");
+			Me.UI.Lot = reader("lot");
+			Me.UI.PlannedEnd = reader("plannedEnd");
+			Me.UI.Operation  = reader("oper_id");
+
+			'manage Job status (end last job + start new job) - this condition is after start prod event (SetUIData triggered by StartProd script)
+			Me.Trigger.SetWo = true;
+		else
+			Me.ProdCapability.EndJob = true;
+			LogError("No data for wo id = "+woId);
+		endif;
+		reader.Close();
+		
+
+		
+		commandText = "EXECUTE [dbo].[LM_settargetSchedEntID] '"+woId+"'," + Me.UI.Operation + ",'" + entity +"'" ; 
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		command.ExecuteNonQuery();
+		
+		LogMessage("***QUERY LM_settargetSchedEntID: " + commandText);
+
+		connection.Close();
+		connection.Dispose();
+
+	endif;
+catch
+	LogError("Exception storing disp qty to job table: "+error);
+endtry;

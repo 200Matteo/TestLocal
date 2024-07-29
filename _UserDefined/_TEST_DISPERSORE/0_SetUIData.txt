@@ -1,0 +1,62 @@
+Me.Trigger.SetUIData = false;
+ 
+LogMessage(Me.Tagname);
+ 
+'Set UI Data
+if(Me.ProdCapability.JobExec.JobPos0.CurWoId == "") then
+	try
+		connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+		connection.Open();
+		entity = Me.Tagname;
+		woId = Me.UI.Wo;
+		operId = Me.UI.Operation;
+	 
+		commandText = "EXECUTE [dbo].[LM_GetOrderDetailsData] '"+woId+"',0,'" + entity + "'" ; 'finch� wingman non passa l'operazione lascio zero
+		LogMessage("***QUERY Get Order Detail data: " + commandText);
+
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		reader = command.ExecuteReader();
+		if(reader.HasRows) then
+			reader.Read();
+			Me.UI.Item = reader("item_id")+" - "+reader("item_desc");
+			Me.UI.QtyReq = reader("req_qty");
+			Me.UI.Lot = reader("lot");
+			Me.UI.PlannedEnd = reader("plannedEnd");
+			Me.UI.Operation  = reader("oper_id");
+			Me.UI.ActualStart = System.DateTime.Now;
+			
+			'Set OCO, make placement and Start Job
+			Me.ProdCapability.JobExec.WorkOrder = Me.UI.Wo;
+			Me.ProdCapability.JobExec.Operation = Me.UI.Operation;
+
+			Me.ProdCapability.StartJob = true;
+		else
+			errorGettingOrder = true;
+			LogError("no order found with woId = "+woId);
+		endif;
+		reader.Close();
+
+		if(errorGettingOrder == false) then
+			commandText = "EXEC LM_PlacementMachine '" + Me.Tagname + "','" + Me.UI.Wo + "'," + Me.UI.Operation;
+			command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+			reader = command.ExecuteReader();
+
+			if(reader.HasRows) then
+				reader.Read();
+				Me.ProdCapability.JobExec.SequenceNumber = reader("SequenceNumber");
+			endif;
+			reader.Close();
+
+			commandText = "EXECUTE [dbo].[LM_settargetSchedEntID] '"+woId+"'," + Me.UI.Operation + ",'" + entity +"'" ; 
+			command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+			command.ExecuteNonQuery();
+			LogMessage("***QUERY LM_settargetSchedEntID: " + commandText);
+		endif;
+		connection.Close();
+		connection.Dispose();
+	catch
+		LogError("Exception storing disp qty to job table: "+error);
+	endtry;
+else
+	LogError("Job running on entity! Cannot place new job!");
+endif;

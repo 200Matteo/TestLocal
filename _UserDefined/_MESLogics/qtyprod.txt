@@ -1,0 +1,30 @@
+if(Me.OnScan == false) then
+	Me.OnScan = true;
+else
+	qty = MyContainer.ProdCapability.JobExec.JobPos0.QtyProd;
+
+	if(qty > 0 and qty > Me.Last_QtyProd) then
+		connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+		connection.Open();
+			
+		commandText = "EXECUTE [dbo].LM_Util_UpdateQty @ent_name,@qty_prod"; 
+		LogMessage("***QUERY LM_Util_UpdateQty: " + commandText + " - QtyPrpd: " + qty);
+
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		param1=command.Parameters.Add("@ent_name", System.Data.SqlDbType.NVarChar, 50);
+		param2 = command.Parameters.Add("@qty_prod", System.Data.SqlDbType.Decimal);
+		param1.Value = MyContainer.Tagname;
+		param2.Value = qty-Me.Last_QtyProd;
+		param2.Precision=15;
+		param2.Scale =3;
+
+		command.Prepare();
+		command.ExecuteNonQuery();
+		connection.Close();
+		connection.Dispose();
+
+		'update HMI qty only if > 0
+		Me.UI.Qty = qty;
+	endif;
+	Me.Last_QtyProd = qty;
+endif;

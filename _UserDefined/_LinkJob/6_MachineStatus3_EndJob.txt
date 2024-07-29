@@ -1,0 +1,46 @@
+LogMessage(Me.Tagname+ " - End Job after having added qty (ENDPROD value)");
+
+Me.MachineStatus.Status = 0;
+
+try
+
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	connection.Open();
+	
+	commandText = "EXEC LM_Update_Job_ActFinishTimeLocal  '" + Me.UI.Wo + "'," + Me.UI.Operation ; 
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	command.ExecuteNonQuery();
+	LogMessage("***QUERY Update_Job_ActFinishTimeLocal: " + commandText);
+
+	Me.InsertInJobHistory=2;
+
+	'LM_InsertInJob_attr
+	commandText = "EXEC LM_InsertInJob_attr '" +  Me.UI.Wo + "'," + Me.UI.Operation +"," + Me.SequenceNumber;
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	LogMessage("***QUERY LM_UpdateJobHistory: " + commandText);
+	command.ExecuteNonQuery();
+	
+	'LM_UpdateJobState
+	Me.UpdateJobState=4;
+
+	entity = Me.Tagname;
+	commandText = "EXECUTE [dbo].[LM_Update_MachinePlacement] '" + entity +"'" ; 
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	command.ExecuteNonQuery();
+	
+	LogMessage("***QUERY EndProdAfterQtyAdded - LM_Update_MachinePlacement: " + commandText);
+
+	connection.Close();
+	connection.Dispose();
+	
+	if Me.Status ==1 then
+		Me.Status = 0;
+	endif;
+	
+catch
+	LogError("EndProdAfterQtyAdded: " + error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

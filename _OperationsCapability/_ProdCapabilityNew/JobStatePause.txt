@@ -1,0 +1,24 @@
+Me.MES.Trigger.Pause = false;
+
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim commandText as string;
+connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+
+try
+	connection.Open();
+	commandText = "EXEC LM_JobDuration '" + Me.JobExec.WorkOrder + "'," + Me.JobExec.Operation + ",5";
+
+	LogMessage("***Pause Job - STORED PROCEDURE JobDuration: " + commandText);
+
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	command.ExecuteNonQuery();
+	connection.Close();
+	connection.Dispose();
+catch
+	LogError("Exception updating Job Duration: "+error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

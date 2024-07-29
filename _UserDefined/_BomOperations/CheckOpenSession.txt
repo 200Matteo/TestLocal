@@ -1,0 +1,31 @@
+'Check and open session
+dim clientType as aaMES.Core.aaClientTypes;
+dim sessionId as integer;
+dim result as aaMES.Result;
+sessionId = Me.sessionId;
+clientType = aaMES.Core.aaClientTypes.clientDataEditor;
+
+try
+	result = aaMES.Core.aaSession.GetSessions(sessionId,null,null);
+
+	if(result.Success) then
+		dim DS as System.Data.DataSet;
+		DS = result.DataSet_Value;
+		if(DS.Tables(0).Rows.Count == 0) then
+			result = aaMES.Core.aaSession.StartSession(clientType,sessionId);
+			if(result.Success) then
+				Me.sessionId = sessionId;
+				Me.CheckOpenSession = 2;
+			else
+				LogError("Error opening session for clientType = "+clientType);
+				Me.CheckOpenSession = 3;
+			endif;
+		endif;
+	else
+		LogError("Error getting session for sessionId = "+sessionId);
+		Me.CheckOpenSession = 3;
+	endif;
+catch
+	LogError("Exception in check open session: "+error);
+	Me.CheckOpenSession = 3;
+endtry;

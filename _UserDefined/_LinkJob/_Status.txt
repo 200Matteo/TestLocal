@@ -1,0 +1,50 @@
+'Status value: 0 = Idle, 1 = Run, 2 = Downtime, 3=Testing, 4=WaitingTesting
+LogMessage("Status_datachange: " + Me.Status);
+
+
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim commandText as string;
+
+try
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	connection.Open();
+
+	if Me.PrevStatus == 1 or Me.PrevStatus == 3 then
+		'aggiornamento durata
+		commandText = "EXEC LM_JobDuration '" + Me.UI.Wo + "'," + Me.UI.Operation + "," + Me.PrevStatus +",'" + Me.TagName + "'"; 
+		LogMessage("***STORED PROCEDURE JobDuration: " + commandText);
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		command.ExecuteNonQuery();
+	endif;
+
+	Me.PrevStatus= Me.Status;
+
+	'LM_UpdateUtilHistory
+	commandText = "EXEC LM_UpdateUtilHistory '" + Me.Tagname + "'," + Me.Status + "," + Me.UI.OperatorId + ",'" + Me.ReasonCode + "'"; 
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+
+	LogMessage("LM_UpdateUtilHistory - Status =: " + Me.Status + ", Query: "+ commandText);
+
+	command.ExecuteNonQuery();
+
+	'LM_UpdateUtilExec
+	commandText = "EXEC LM_UpdateUtilExec '" + Me.Tagname + "'," + Me.Status + "," + Me.UI.OperatorId + ",'" + Me.ReasonCode + "'"; 
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+
+	LogMessage("LM_UpdateUtilExec - Status =: " + Me.Status + ", Query: "+ commandText);
+
+	command.ExecuteNonQuery();
+
+
+
+	connection.Close();
+	connection.Dispose();
+
+catch
+	LogError("Me.Status: " + error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

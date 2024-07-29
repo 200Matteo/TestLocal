@@ -1,0 +1,11 @@
+LogMessage(Me.Tagname+" - Job Exec in error");
+
+'If OCO in error -> reset OCO
+if(Me.MachineStatus.Timeout < 2) then
+	LogWarning(Me.Tagname+" - OCO in error, send Reset command");
+	Me.ProdCapability.JobExec.ResetCmd = true;
+	Me.MachineStatus.Timeout = Me.MachineStatus.Timeout + 1;
+else
+	Me.MachineStatus.Status = 2; 'set error in the status
+	Me.MachineStatus.Timeout = 0;
+endif;

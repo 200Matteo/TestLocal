@@ -1,0 +1,3 @@
+Me.StartWaitingTesting = false;
+
+MyContainer.Status = 4;

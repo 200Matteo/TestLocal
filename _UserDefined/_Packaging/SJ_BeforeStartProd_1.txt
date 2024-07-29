@@ -1,0 +1,9 @@
+LogMessage(Me.Tagname);
+
+Me.MachineStatus.BeforeStartProd = 0;
+
+Me.Status = 1;
+
+if(Me.ProdCapability.JobExec.WorkOrder <> "" and Me.ProdCapability.JobExec.JobPos0.CurWoId == "") then
+	Me.ProdCapability.StartJob = true;
+endif;

@@ -1,0 +1,1 @@
+Me.Spare1 = Me.ReasonCode;

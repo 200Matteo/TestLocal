@@ -1,0 +1,9 @@
+LogMessage("StartDownTime ");
+
+Me.MachineStatus.Status = 6;
+
+Me.Status = 2;
+
+Me.Trigger.StartDownTime = 0;
+
+Me.TriggerPauseJob= true;

@@ -1,0 +1,6 @@
+LogMessage(Me.Tagname);
+
+'in order to start the job we need to 
+Me.MES.TriggerPauseTesting= 3;
+
+MyContainer.Trigger.SetUIData = true;

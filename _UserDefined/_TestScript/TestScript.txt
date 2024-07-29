@@ -1,0 +1,6 @@
+dim counter as integer;
+counter = counter + 1;
+
+M1.UI.ActualBomItemId = "aksdjfkaj";
+
+Me.Attribute001 = false;

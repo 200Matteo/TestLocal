@@ -1,0 +1,3 @@
+LogMessage("AutomaticIdle ");
+
+Me.StartPause= true;

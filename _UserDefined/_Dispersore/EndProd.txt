@@ -1,0 +1,103 @@
+dim i as integer;
+dim k as integer;
+dim endProd as string;
+dim len as integer;
+dim woId as string;
+dim operId as string;
+dim qtyDisp as double;
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+dim commandText as string;
+dim entity as string;
+
+
+'e.g. ENDPROD = "Dispersore 4,6950"
+'la quantit� fatta � data dalla differenza delle due quantit�
+endProd = Me.SCADA.ENDPROD;
+Me.SCADA.ENDPROD = "";
+try 
+	len = endProd.Length;
+
+	i = StringInString(endProd, ",", 1, 0);
+
+	LogMessage("EndProd: " + endProd + " - i: " + i + " - len:" + len);
+
+	if i == len then 'non ho la quantit� dopo la virgola in SCADA.ENDPROD
+		Me.Dispersore.QtaEnd= 0;
+	else
+		Me.Dispersore.QtaEnd= System.Convert.ToDouble(StringRight(endProd, StringLen(endProd)-i));
+	endif;
+
+	qtyDisp = Me.Dispersore.QtaStart-Me.Dispersore.QtaEnd;
+
+	'LM_InsertInJob_attr: update the table jobattr in order to indicate that we can procede with packaging
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	connection.Open();
+
+	commandText = "EXEC LM_InsertInJob_attr '" +  Me.UI.Wo + "'," + Me.UI.Operation +"," + Me.ProdCapability.JobExec.SequenceNumber;
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	LogMessage("***QUERY LM_UpdateJobHistory: " + commandText);
+	command.ExecuteNonQuery();
+
+	connection.Close();
+	connection.Dispose();
+
+	LogMessage("Final order qty at end prod = "+qtyDisp);
+
+	Me.Status = 0;
+
+	'Store disp qty to DB
+	'dim connection as System.Data.SqlClient.SqlConnection;
+	'dim command as System.Data.SqlClient.SqlCommand;
+	'dim newConnection as boolean;
+	'dim commandText as string;
+	'try
+	'	newConnection = false;
+		'Check if connection already exists and is opened
+	'	connection = System.AppDomain.CurrentDomain.GetData(ERP.MESConnectionTag);
+	'	if connection <> null then
+	'		if(connection.State <> System.Data.ConnectionState.Open) then
+	'			newConnection = true;
+	'			System.AppDomain.CurrentDomain.SetData(ERP.MESConnectionTag, Null);
+	'		endif;
+	'	else
+	'		newConnection = true;
+	'	endif;
+
+		'Open new Connection and set it to the current domain
+	'	if(newConnection) then
+	'		connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	'		connection.Open();
+	'		System.AppDomain.CurrentDomain.SetData(ERP.MESConnectionTag, connection); 
+	'	endif;
+
+	'	woId = Me.ProdCapability.JobExec.JobPos0.CurWoId;
+	'	operId = Me.ProdCapability.JobExec.JobPos0.CurOperId;
+		
+	'	commandText = "EXECUTE [dbo].[LM_UpdateJobQty] '"+woId+"','"+operId+"',0,"+qtyDisp+",0";
+
+	'	LogMessage("***QUERY End Prod: " + commandText);
+
+	'	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		'command.ExecuteNonQuery();
+	'catch
+	'	LogError("Exception storing disp qty to job table: "+error);
+	'endtry;
+
+	'idle state if running state
+	if(Me.Status == 1) then
+		Me.Status = 0;
+	endif;
+
+	Me.ProductionState = 0;
+
+	Me.MachineStatus.Status = 3;
+
+catch
+	LogError("SCADA.ENDPROD: " + error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

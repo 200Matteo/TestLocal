@@ -1,0 +1,34 @@
+dim qtyProd as integer;
+dim qtyGood as integer;
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim commandText as string;
+dim woId as string;
+dim operId as string;
+dim seqNumber as integer;
+
+qtyGood = Me.UI.QtyGood;
+Me.UI.QtyGood = 0;
+
+connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+try
+	qtyProd = Me.QtyProd;
+	woId = Me.UI.Wo;
+	operId = Me.UI.Operation;
+	seqNumber = Me.SequenceNumber;
+
+	connection.Open();
+	commandText = "EXEC LM_UpdateJobQty '" + woId + "','" + operId + "'," + seqNumber + "," + qtyGood + "," + qtyProd;
+
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	command.ExecuteNonQuery();
+
+	connection.Close();
+	connection.Dispose();
+
+	Me.MachineStatus.Status = 3;
+catch
+	LogError("triggerGoodQtyUpdate: "+error);
+	connection.Close();
+	connection.Dispose();
+endtry;

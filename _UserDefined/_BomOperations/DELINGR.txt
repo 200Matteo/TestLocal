@@ -1,0 +1,75 @@
+delingr = MyContainer.SCADA.DELINGR;
+LogMessage(Me.Tagname+" - DELINGR: "+delingr);
+MyContainer.SCADA.DELINGR = "";  ' item_id,bom_pos|item,bom_pos
+
+indexDelimeter = 0;
+try
+	while indexDelimeter >= 0
+		indexDelimeter = delingr.IndexOf("|");
+		if(indexDelimeter > 0) then
+			item = delingr.Substring(0,indexDelimeter);
+			delingr = delingr.Substring(indexDelimeter+1);
+		else
+			item = delingr;
+		endif;
+
+		'item = item_id,bom_pos,qta
+		tempData = item.IndexOf(",");
+		if(tempData > 0) then
+			'First element = ItemId
+			itemId = item.Substring(0,tempData);
+			LogMessage("DELINGR itemId: " + itemId);
+
+			tempStr = item.Substring(tempData+1); 'sarebbe la stinga che rimane a destra della ,--> bom_pos
+			
+			LogMessage("DELINGR: " +tempStr);
+			if(tempStr<>"") then
+				'Second element
+				bom_pos = tempStr;
+				bom_pos_int = Int(bom_pos)*10;
+				LogMessage("DELINGR bompos: " + bom_pos_int);
+			else
+				LogError("No bom_pos in the DELINGR Tag. DELINGR = "+item);
+			endif;
+		else
+			LogError("No itemid in the DELINGR Tag. DELINGR = "+item);
+		endif;
+
+
+		woId = MyContainer.SCADA.WoId;
+
+		if bom_pos <> "" then
+			connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+			connection.Open();
+			commandText = "LM_Insert_Bom_Change";
+			command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+			command.CommandType = System.Data.CommandType.StoredProcedure;
+			MachineIdPar = command.Parameters.Add("@MachineId", System.Data.SqlDbType.NVarChar, 40);
+			WoIdPar = command.Parameters.Add("@WoId", System.Data.SqlDbType.NVarChar, 40);
+			BomPosPar = command.Parameters.Add("@BomPos", System.Data.SqlDbType.Int);
+			ItemIdPar = command.Parameters.Add("@ItemId", System.Data.SqlDbType.NVarChar, 40);
+			QtyPar = command.Parameters.Add("@Qty", System.Data.SqlDbType.Float);
+			TypePar = command.Parameters.Add("@Type", System.Data.SqlDbType.SmallInt);
+
+			MachineIdPar.Value = MyContainer.Tagname;
+			WoIdPar.Value = woId;
+			BomPosPar.Value = bom_pos_int;
+			ItemIdPar.Value = itemId;
+			QtyPar.Value = System.Double.Parse("0");
+			TypePar.Value = 2;
+			command.ExecuteNonQuery();
+
+			connection.Close();
+			connection.Dispose();
+		else
+			LogError("Exception Me.SCADA.DELINGR bom_pos= "+ bom_pos);
+		endif;
+	endwhile;
+catch
+
+	LogError("Exception Me.SCADA.DELINGR: "+error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

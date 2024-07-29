@@ -1,0 +1,45 @@
+dim qty as double;
+qty = Me.QtyToAdd;
+Me.QtyToAdd = 0;
+
+if(qty > 0) then
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	connection.Open();
+		
+	'commandText = "EXECUTE [dbo].LM_Util_UpdateQty @ent_name,@qty_prod"; 
+	'LogMessage("***QUERY LM_Util_UpdateQty: " + commandText + " - QtyPrpd: " + qty);
+
+	'command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	'param1=command.Parameters.Add("@ent_name", System.Data.SqlDbType.NVarChar, 50);
+	'param2 = command.Parameters.Add("@qty_prod", System.Data.SqlDbType.Decimal);
+	'param1.Value = Me.Tagname;
+	'param2.Value = qty;
+	'param2.Precision=15;
+	'param2.Scale =3;
+
+	'command.Prepare();
+	'command.ExecuteNonQuery();
+	
+	commandText = "EXECUTE [dbo].LM_UpateUtilHistoryQtyProd @st1,@num,@st2,@int"; 
+	LogMessage("***QUERY LM_UpateUtilHistoryQtyProd: " + commandText + " - QtyPrpd: " +qty);
+
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	param1=command.Parameters.Add("@st1", System.Data.SqlDbType.NChar, 50);
+	param2 = command.Parameters.Add("@num", System.Data.SqlDbType.Decimal);
+	param3 = command.Parameters.Add("@st2", System.Data.SqlDbType.NChar, 50);
+	param4 = command.Parameters.Add("@int", System.Data.SqlDbType.Int,4);
+	param1.Value = Me.Tagname;
+	param2.Value = qty;
+	param2.Precision=10;
+	param2.Scale =3;
+	param3.Value =Me.UI.Wo;
+	param4.Value= Me.UI.Operation;
+
+	command.Prepare();
+	command.ExecuteNonQuery();
+
+
+	connection.Close();
+	connection.Dispose();
+
+endif;

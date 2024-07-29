@@ -1,0 +1,137 @@
+LogMessage(Me.Tagname + " End to disp: "+Me.SCADA.ENDDOSE);
+
+dim i as integer;
+dim endToDisp as string;
+dim tempStr as string;
+dim itemId as string;
+dim qtyStr as string;
+dim qtyToAdd as double;
+dim finalQty as double;
+dim actualQty as double;
+dim indexDelimeter as integer;
+dim itemIndex as integer;
+dim item as string;
+dim tempData as integer;
+dim woId as string;
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+dim param1 as System.Data.SqlClient.SqlParameter;
+dim param2 as System.Data.SqlClient.SqlParameter;
+dim param3 as System.Data.SqlClient.SqlParameter;
+dim param4 as System.Data.SqlClient.SqlParameter;
+dim commandText as string;
+
+indexDelimeter=0;
+
+endToDisp = Me.SCADA.ENDDOSE;
+
+Me.SCADA.ENDDOSE = "";
+
+try
+	while indexDelimeter >= 0
+		indexDelimeter = endToDisp.IndexOf("|");
+		if(indexDelimeter > 0) then
+			item = endToDisp.Substring(0,indexDelimeter);
+			endToDisp = endToDisp.Substring(indexDelimeter+1);
+		else
+			item = endToDisp;
+		endif;
+
+
+		'indexDelimeter = endToDisp.IndexOf(",");
+		tempData = item.IndexOf(",");
+		if(tempData > 0) then
+			'First element = ItemId
+			itemId = item.Substring(0,tempData);
+			tempStr = item.Substring(tempData+1); 'sarebbe la stinga che rimane a destra del |
+			tempData = tempStr.IndexOf(","); 'sarebbe il nuovo index delimiter
+			if(tempData > 0) then
+				qtyStr = tempStr.Substring(0,tempData);
+				finalQty = System.Double.Parse(qtyStr.Replace(".",","));
+				qtyToAdd = finalQty;
+				if(qtyToAdd > 0) then
+					Me.QtyProd = Me.QtyProd+qtyToAdd;
+					LogMessage("Qty to add = "+qtyToAdd);
+				else
+					LogWarning("qty to add <= 0: "+qtyToAdd);
+				endif;
+				tempData = tempStr.IndexOf(",");
+			else
+				LogError("1 No qty in the ENDDOSE Tag. ENDDOSE = "+item);
+			endif;
+		else
+			LogError("2 No qty in the ENDDOSE Tag. ENDDOSE= "+item);
+		endif;
+
+		'get the actual working bom pos
+		connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+		connection.Open();
+		
+		woId = Me.UI.Wo;
+		commandText = "EXECUTE [dbo].LM_CheckBomItems '"+ woId +"','" + itemId +"',2"; 
+
+		LogMessage("***QUERY LM_CheckBomItems: " + commandText);
+
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		reader = command.ExecuteReader();
+		
+		if(reader.HasRows) then
+			reader.Read();
+			Me.SCADA.ActualBomPos = reader("bom_pos");
+
+		else
+			LogError("No bom_pos for wo_id = "+woId);
+		endif;
+		reader.Close();
+
+		'update the quantity n the job table
+		commandText = "EXECUTE [dbo].LM_UpateUtilHistoryQtyProd @st1,@num,@st2,@int"; 
+		LogMessage("***QUERY LM_UpateUtilHistoryQtyProd: " + commandText + " - QtyPrpd: " + qtyToAdd);
+
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		param1=command.Parameters.Add("@st1", System.Data.SqlDbType.NChar, 50);
+		param2 = command.Parameters.Add("@num", System.Data.SqlDbType.Decimal);
+		param3 = command.Parameters.Add("@st2", System.Data.SqlDbType.NChar, 50);
+		param4 = command.Parameters.Add("@int", System.Data.SqlDbType.Int,4);
+		param1.Value = Me.Tagname;
+		param2.Value = qtyToAdd;
+		param2.Precision=10;
+		param2.Scale =3;
+		param3.Value =Me.UI.Wo;
+		param4.Value= Me.UI.Operation;
+
+		command.Prepare();
+		command.ExecuteNonQuery();
+
+
+		'LM_UpdatejobExt_EndDoseQty
+		commandText = "EXECUTE [dbo].LM_UpdatejobExt_EndDoseQty @st1,@int,@seq,@num"; 
+		LogMessage("***QUERY LM_UpdatejobExt_EndDoseQty: " + commandText + "-" + qtyToAdd);
+		
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		param1=command.Parameters.Add("@st1", System.Data.SqlDbType.NChar, 50);
+		param2 = command.Parameters.Add("@int", System.Data.SqlDbType.Int,4);	
+		param3 = command.Parameters.Add("@seq", System.Data.SqlDbType.Int,4);	
+		param4 = command.Parameters.Add("@num", System.Data.SqlDbType.Decimal);
+		param1.Value = Me.UI.Wo;
+		param2.Value= Me.UI.Operation;
+		param3.Value= Me.SequenceNumber;
+		param4.Value = qtyToAdd;
+		param4.Precision=10;
+		param4.Scale =3;
+		
+		command.Prepare();
+		command.ExecuteNonQuery();
+
+		connection.Close();
+		connection.Dispose();
+	endwhile;
+
+catch
+	LogError(error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

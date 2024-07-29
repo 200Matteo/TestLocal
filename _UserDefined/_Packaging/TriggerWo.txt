@@ -1,0 +1,5 @@
+Me.Trigger.SetWo = false;
+
+LogMessage(Me.Tagname+" - Start check machine status");
+
+Me.MachineStatus.Status = 4;

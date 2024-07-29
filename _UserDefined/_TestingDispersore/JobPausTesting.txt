@@ -1,0 +1,16 @@
+'check if there is a job running for the machine
+if(MyContainer.ProdCapability.JobExec.JobPos0.CurOperId == "" and MyContainer.ProdCapability.JobExec.JobPos0.CurSeqNo == "0" and MyContainer.ProdCapability.JobExec.JobPos0.CurWoId == "") then
+	'no job running for the machine, start testing job
+	LogMessage("jobPauseTesting if");
+	'in order to start the job we need to 
+	Me.MES.TriggerPauseTesting = 3;
+
+	MyContainer.Trigger.SetUIData = true;
+else
+	'if UCO forced status in testing, then pause the current job (operation 10) in order to start the same order with operation 20
+	MyContainer.ProdCapability.PauseJob = true;
+	LogMessage("jobPauseTesting else");
+	'Waiting that production job is paused
+	Me.MES.TriggerPauseTesting = 2;
+endif;
+

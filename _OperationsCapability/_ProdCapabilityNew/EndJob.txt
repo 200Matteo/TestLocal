@@ -1,0 +1,17 @@
+Me.EndJob= false;
+
+try
+	dim cName as string;
+	cName = MyContainer.Tagname;
+	Me.MES.LastWo = Me.JobExec.JobPos0.CurWoId;
+	Me.MES.LastOpe = Me.JobExec.JobPos0.CurOperId;
+	'only if not packaging
+	if(cName == D1.Tagname or cName == D2.Tagname or cName == D3.Tagname or cName == D4.Tagname or cName == D5.Tagname or cName == D6.Tagname
+		or cName == V1.Tagname or cName == V2.Tagname or cName == V3.Tagname or cName == V4.Tagname or cName == V5.Tagname or cName == V6.Tagname) then
+		Me.MES.Trigger.AddJobAttr = true;
+	endif;
+	Me.JobExec.EndJobCmd = true;
+	Me.MES.Trigger.End = true;
+catch
+	LogError(error);
+endtry;

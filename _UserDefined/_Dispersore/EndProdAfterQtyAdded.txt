@@ -1,0 +1,37 @@
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+dim commandText as string;
+dim entity as string;
+
+LogMessage(Me.Tagname+ " - End Job after having added qty (ENDPROD value)");
+try
+	Me.ProdCapability.EndJob = true;
+
+	Me.UI.Wo = "";
+	Me.UI.Operation = 0;
+	Me.UI.Item = "";
+	Me.UI.Lot = "";
+
+	Me.MachineStatus.Status = 0;
+
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	connection.Open();
+	entity = Me.Tagname;
+	commandText = "EXECUTE [dbo].[LM_Update_MachinePlacement] '" + entity +"'" ; 
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	command.ExecuteNonQuery();
+	
+	LogMessage("***QUERY EndProdAfterQtyAdded - LM_Update_MachinePlacement: " + commandText);
+
+	connection.Close();
+	connection.Dispose();
+
+	
+catch
+	LogError("EndProdAfterQtyAdded: " + error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

@@ -1,0 +1,20 @@
+Me.Trigger.EndJob = false;
+
+woId = Me.ProdCapability.JobExec.JobPos0.CurWoId;
+operId = Me.ProdCapability.JobExec.JobPos0.CurOperId;
+operStr = Me.UI.Operation;
+
+Me.UI.Wo = "";
+Me.UI.Operation = 0;
+Me.UI.Item = "";
+Me.UI.Lot = "";
+
+if(Me.Log.Enable) then
+	LogMessage(Me.Tagname+" Check end job - wo Id = "+woId+" - UI Wo Id = "+ Me.UI.Wo+" - UI Oper Id = "+operStr+" - operId = "+operId);
+endif;
+if((woId.Trim() <> "" and woId.Trim() <> Me.UI.Wo) or (operId.Trim() <> "" and operId.Trim() <> operStr)) then
+	Me.ProdCapability.EndJob = true;
+	Me.WingmanPlaced = false;
+else 
+	LogError("Trigger end job - Job not running on entity");
+endif;

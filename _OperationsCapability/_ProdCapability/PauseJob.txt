@@ -1,0 +1,49 @@
+Me.MES.JobPauseScriptActive = true;
+
+'Check if I have a job active
+connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+try
+	connection.Open();
+	commandText = "SELECT state_cd FROM [LM_SanMarco_MES].[dbo].[vw_job_data] where wo_id = '" + Me.JobExec.WorkOrder + "' and oper_id = '"+Me.JobExec.Operation+"'";
+
+	LogMessage("*** Pause job - query to check if job is running: " + commandText);
+
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	reader = command.ExecuteReader();
+
+	if(reader.HasRows) then
+		reader.Read();
+		state_cd = System.Int32.Parse(reader("state_cd"));
+	endif;
+
+	reader.Close();
+
+	if (state_cd == 3) then '3=RUNNING
+		Me.MES.Trigger.Pause = true;
+		Me.JobExec.PauseJobCmd = true;
+		'Job running, reset tags
+		Me.MES.TimeSec.JobPause = 0;
+		Me.PauseJob = false;
+	else
+		if(Me.MES.TimeSec.JobPause < 10) then
+			'Wait one second to check if a job goes to running status
+			LogWarning("Pause command to job not running, ****** wait for another second ****** state_cd: " + state_cd+" - job = "+Me.JobExec.JobPos0.CurWoId+" - "+Me.JobExec.JobPos0.CurOperId);
+			Me.MES.TimeSec.JobPause = Me.MES.TimeSec.JobPause+1;
+		else
+			'Timeout reached! reset pause job
+			Me.PauseJob = false;
+			Me.MES.TimeSec.JobPause = 0;
+			LogError("Pause job error, job did not start!");
+		endif;
+	endif;
+	connection.Close();
+	connection.Dispose();
+	Me.MES.JobPauseScriptActive = false;
+catch
+	LogError(error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+	Me.MES.JobPauseScriptActive = false;
+endtry;

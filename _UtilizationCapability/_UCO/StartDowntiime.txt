@@ -1,0 +1,3 @@
+MyContainer.Status = 2;
+
+Me.StartDownTime = 0;

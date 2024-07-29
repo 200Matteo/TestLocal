@@ -1,0 +1,9 @@
+dim errorCode as integer;
+dim errorMessage as string;
+
+errorCode = Me.JobExec.JobPos0.Prod.BadProduction.ErrorCode;
+errorMessage = Me.JobExec.JobPos0.Prod.BadProduction.ErrorMessage;
+
+LogError(Me.Tagname+" - reset error state: bad production error code = "+errorCode+" - message = "+errorMessage);
+
+Me.JobExec.JobPos0.Prod.BadProduction.ResetCmd = true;

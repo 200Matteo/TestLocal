@@ -1,0 +1,97 @@
+LogMessage(Me.Tagname + " Start To Disp: "+Me.SCADA.STARTDOSE);
+
+dim i as integer;
+dim startToDisp as string;
+dim tempData as integer;
+dim indexDelimeter as integer;
+dim itemId as string;
+dim qtyStr as string;
+dim item as string;
+dim bomIndex as integer;
+dim woId as string;
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+dim commandText as string;
+dim tempStr as string;
+
+indexDelimeter = 0;
+startToDisp = Me.SCADA.STARTDOSE;
+Me.SCADA.STARTDOSE = "";
+
+if Me.MachineStatus.Status == 5 then
+	Me.MachineStatus.Status = 0;
+
+	commandText = "EXEC LM_GetJobQtyProd '" + Me.UI.Wo + "'," + Me.UI.Operation;
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	reader = command.ExecuteReader();
+
+	if(reader.HasRows) then
+		reader.Read();
+		Me.QtyProd = System.Double.Parse(reader("qty_prod"));
+	endif;
+	reader.Close();
+	
+endif;
+
+try
+	while indexDelimeter >= 0
+		indexDelimeter = startToDisp.IndexOf("|");
+		if(indexDelimeter > 0) then
+			item = startToDisp.Substring(0,indexDelimeter);
+			startToDisp = startToDisp.Substring(indexDelimeter+1);
+		else
+			item = startToDisp;
+		endif;
+
+		tempData = item.IndexOf(",");
+		if(tempData > 0) then
+			'First element = ItemId
+			itemId = item.Substring(0,tempData);
+			tempStr = item.Substring(tempData+1); 'sarebbe la stinga che rimane a destra del |
+			tempData = tempStr.IndexOf(","); 'sarebbe il nuovo index delimiter
+			if(tempData > 0) then
+				'Second element
+					qtyStr = tempStr.Substring(0,tempData);
+			else
+				LogError("No qty in the STARTDOSE Tag. STARTDOSE = "+item);
+			endif;
+		else
+			LogError("No qty in the STARTDOSE Tag. STARTDOSE = "+item);
+		endif;
+
+		'update actual Bom position
+		connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+		connection.Open();
+		
+		woId = Me.UI.Wo;
+		commandText = "EXECUTE [dbo].LM_CheckBomItems '"+ woId +"','" + itemId +"',1"; 
+
+		LogMessage("***QUERY LM_CheckBomItems: " + commandText);
+
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		reader = command.ExecuteReader();
+		
+		if(reader.HasRows) then
+			reader.Read();
+			Me.SCADA.ActualBomPos = reader("bom_pos");
+		else
+			LogError("STARTDOSE No bom_pos for wo_id = "+woId);
+		endif;
+		reader.Close();
+		connection.Close();
+		connection.Dispose();
+
+		if(Me.ProductionState == 1 or Me.Status == 0) then
+			'Set Running status
+			Me.ReasonCode = "";
+			Me.MachineStatus.BeforeStartProd = 1;
+		endif;
+	endwhile;
+catch
+	LogError(error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

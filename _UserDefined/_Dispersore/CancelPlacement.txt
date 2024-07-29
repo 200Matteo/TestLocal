@@ -1,0 +1,34 @@
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+dim commandText as string;
+dim entity as string;
+
+try
+	Me.UI.Item = "";
+	Me.UI.Lot = "";
+	Me.UI.QtyReq = 0;
+	Me.UI.Wo = "";
+
+	Me.Trigger.CancelPlacement = false;
+
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	connection.Open();
+	entity = Me.Tagname;
+	commandText = "EXECUTE [dbo].[LM_Update_MachinePlacement] '" + entity +"'" ; 
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	command.ExecuteNonQuery();
+	
+	LogMessage("***QUERY CancelPlacement - LM_Update_MachinePlacement: " + commandText);
+
+	connection.Close();
+	connection.Dispose();
+
+
+catch
+	LogError("CancelPlacement: " + error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

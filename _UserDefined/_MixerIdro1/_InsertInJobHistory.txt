@@ -1,0 +1,26 @@
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+dim commandText as string;
+dim jobHistory as integer;
+
+try	
+	if Me.InsertInJobHistory <> 0 then
+
+		connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+		connection.Open();
+
+		commandText = "EXEC LM_InsertInJobHistory_Mixer '" + Me.Tagname + "','" +  Me.UI.Wo + "'," + Me.UI.Operation +"," + Me.SequenceNumber + "," + Me.InsertInJobHistory;
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		LogMessage("***QUERY LM_InsertInJobHistory_Mixer: " + commandText + "-" + Me.InsertInJobHistory);
+		command.ExecuteNonQuery();
+
+		Me.InsertInJobHistory=0;
+	endif;
+catch
+	LogError(error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

@@ -1,0 +1,53 @@
+Me.Trigger.SetWo = false;
+
+LogMessage(Me.Tagname+" - Start check machine status");
+
+'Set Wo from Homepage
+
+Me.MachineStatus.Status = 0;
+Me.MachineStatus.Timeout = 0;
+
+LogMessage(Me.Tagname+" - new Order ready to start ");
+try
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	connection.Open();
+	commandText = "EXEC LM_PlacementMachine '" + Me.Tagname + "','" + Me.UI.Wo + "'," + Me.UI.Operation;
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+
+	reader = command.ExecuteReader();
+	if(reader.HasRows) then
+		reader.Read();
+		Me.UI.Item = reader("item_id")+" - "+reader("item_desc");
+		Me.UI.Lot = reader("lot");
+		Me.UI.QtyReq = System.Int32.Parse(reader("req_qty"));
+		Me.UI.PlannedEnd = System.DateTime.Parse(reader("DataFine"));
+		Me.SequenceNumber = reader("SequenceNumber");
+	endif;
+	reader.Close();
+
+		commandText = "EXECUTE [dbo].[LM_settargetSchedEntID] '"+Me.UI.Wo+"'," + Me.UI.Operation + ",'" + Me.Tagname +"'" ; 
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		command.ExecuteNonQuery();
+		
+		'update the ActStartTimeLocal given the wo_id and oper_id and set run_ent_id given ent_name = tagname
+		'commandText = "EXEC LM_Update_Job_ActStartTimeLocal  '" + Me.UI.Wo + "'," + Me.UI.Operation + ",'" + Me.Tagname + "'";
+		'command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		'LogMessage("***QUERY Update_Job_ActStartTimeLocal: " + commandText);
+		'command.ExecuteNonQuery();
+
+		'LM_UpdateJobState
+		'Me.UpdateJobState=3;
+
+		'job_history
+		'Me.InsertInJobHistory=1;
+
+	connection.Close();
+	connection.Dispose();
+
+catch
+	LogError(error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

@@ -1,0 +1,106 @@
+LogMessage(Me.Tagname + " End to disp: "+Me.SCADA.ENDTODISP);
+
+dim i as integer;
+dim endToDisp as string;
+dim tempStr as string;
+dim itemId as string;
+dim qtyStr as string;
+dim qtyToAdd as double;
+dim finalQty as double;
+dim actualQty as double;
+dim indexDelimeter as integer;
+dim itemIndex as integer;
+dim item as string;
+dim tempData as integer;
+dim woId as string;
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+dim commandText as string;
+
+indexDelimeter=0;
+
+endToDisp = Me.SCADA.ENDTODISP;
+
+Me.SCADA.ENDTODISP = "";
+
+try
+	while indexDelimeter >= 0
+		indexDelimeter = endToDisp.IndexOf("|");
+		if(indexDelimeter > 0) then
+			item = endToDisp.Substring(0,indexDelimeter);
+			endToDisp = endToDisp.Substring(indexDelimeter+1);
+		else
+			item = endToDisp;
+		endif;
+
+
+		'indexDelimeter = endToDisp.IndexOf(",");
+		tempData = item.IndexOf(",");
+		if(tempData > 0) then
+			'First element = ItemId
+			itemId = item.Substring(0,tempData);
+			tempStr = item.Substring(tempData+1); 'sarebbe la stinga che rimane a destra del |
+			tempData = tempStr.IndexOf(","); 'sarebbe il nuovo index delimiter
+			if(tempData > 0) then
+				'Second element
+				tempStr = tempStr.Substring(tempData +1);		
+				tempData = tempStr.IndexOf(",");
+				if(tempData > 0) then
+					'third element
+					qtyStr = tempStr.Substring(0,tempData);
+
+					finalQty = System.Double.Parse(qtyStr, new System.Globalization.CultureInfo("en-US"));
+					if Me.FirstEndToDispDone then 'in the firts end to disp we need to subtract the initial quantity
+						qtyToAdd = finalQty - Me.ProdCapability.JobExec.JobPos0.QtyProd;
+					else
+						qtyToAdd = finalQty - Me.ProdCapability.JobExec.JobPos0.QtyProd-Me.Dispersore.QtaStart;
+						Me.FirstEndToDispDone = true;
+					endif;
+					if(qtyToAdd > 0) then
+						Me.ProdCapability.Counter = qtyToAdd;
+						LogMessage("Qty to add to OCO = "+Me.ProdCapability.Counter);
+						Me.ProdCapability.AddQty = true;
+					else
+						LogWarning("qty to add <= 0: "+qtyToAdd);
+					endif;
+				else
+					LogError("No qty in the ENDTODISP Tag. ENDTODISP = "+item);
+				endif;
+			else
+				LogError("No qty in the ENDTODISP Tag. ENDTODISP = "+item);
+			endif;
+		else
+			LogError("No qty in the ENDTODISP Tag. ENDTODISP = "+item);
+		endif;
+
+		'get the actual working bom pos
+		connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+		connection.Open();
+		
+		woId = Me.UI.Wo;
+		commandText = "EXECUTE [dbo].LM_CheckBomItems '"+ woId +"','" + itemId +"',2"; 
+
+		LogMessage("***QUERY LM_CheckBomItems: " + commandText);
+
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		reader = command.ExecuteReader();
+		
+		if(reader.HasRows) then
+			reader.Read();
+			Me.SCADA.ActualBomPos = reader("bom_pos");
+
+		else
+			LogError("No bom_pos for wo_id = "+woId);
+		endif;
+		reader.Close();
+		connection.Close();
+		connection.Dispose();
+	endwhile;
+catch
+	LogError(error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

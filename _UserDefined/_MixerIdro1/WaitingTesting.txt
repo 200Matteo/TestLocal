@@ -1,0 +1,5 @@
+Me.StartWaitingTesting = false;
+
+Me.Status = 4;
+
+Me.TriggerPauseJob= true;

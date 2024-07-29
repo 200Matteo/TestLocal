@@ -1,0 +1,35 @@
+dim i as integer;
+dim k as integer;
+dim endProd as string;
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim commandText as string;
+dim woId as string;
+dim operId as string;
+dim qtyPall as integer;
+
+Me.Trigger.EndProdManually = false;
+
+'Store disp qty to DB
+try
+	
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	connection.Open();
+	
+	woId = Me.ProdCapability.JobExec.JobPos0.CurWoId;
+	operId = Me.ProdCapability.JobExec.JobPos0.CurOperId;
+	qtyPall = Me.ProdCounter.Value;
+	commandText = "EXECUTE [dbo].[LM_UpdateJobQty] '"+woId+"','"+operId+"',0,"+Me.UI.QtyGood+","+qtyPall;
+
+	LogMessage("***QUERY End Prod: " + commandText);
+
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	command.ExecuteNonQuery();
+
+	connection.Close();
+	connection.Dispose();
+catch
+	LogError("Exception storing disp qty to job table: "+error);
+endtry;
+
+Me.MachineStatus.Status = 3;

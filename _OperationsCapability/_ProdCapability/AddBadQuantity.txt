@@ -1,0 +1,18 @@
+dim qta as double;
+dim qtaPrd as double;
+dim scraps as double;
+
+Me.AddBadQty= false;
+try
+	qta = Me.CounterDeclared;
+	qtaPrd = Me.JobExec.JobPos0.QtyProd;
+	scraps = qtaPrd-qta;
+
+	Me.JobExec.JobPos0.Prod.BadProduction.AddProdQtyAbs = scraps;
+	Me.JobExec.JobPos0.Prod.BadProduction.AddProdQtyAbsCmd = true;
+
+	'Send end job
+	MyContainer.MachineStatus.Status = 3;
+catch
+	LogError(error);
+endtry;

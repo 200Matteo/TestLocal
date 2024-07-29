@@ -1,0 +1,10 @@
+dim qty as double;
+qty = Me.ItemQty;
+if(qty > 0) then
+	Me.ItemQty = 0;
+	MyContainer.ProdCapability.Counter = qty;
+	LogMessage("Qty to add to OCO = "+qty+" - actual bom pos = "+Me.bomPos);
+	MyContainer.ProdCapability.AddQty = true;
+
+	MyContainer.SCADA.ActualBomPos = Me.bomPos;
+endif;

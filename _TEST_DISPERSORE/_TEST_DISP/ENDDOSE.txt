@@ -1,0 +1,113 @@
+LogMessage(Me.Tagname + " End Dose: "+Me.SCADA.ENDDOSE);
+
+dim i as integer;
+dim endToDisp as string;
+dim tempStr as string;
+dim itemId as string;
+dim qtyStr as string;
+dim qtyToAdd as double;
+dim finalQty as double;
+dim actualQty as double;
+dim indexDelimeter as integer;
+dim itemIndex as integer;
+dim item as string;
+dim tempData as integer;
+dim woId as string;
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+dim param1 as System.Data.SqlClient.SqlParameter;
+dim param2 as System.Data.SqlClient.SqlParameter;
+dim param3 as System.Data.SqlClient.SqlParameter;
+dim param4 as System.Data.SqlClient.SqlParameter;
+dim commandText as string;
+
+indexDelimeter=0;
+
+endToDisp = Me.SCADA.ENDDOSE;
+
+Me.SCADA.ENDDOSE = "";
+
+
+try
+	while indexDelimeter >= 0
+		indexDelimeter = endToDisp.IndexOf("|");
+		if(indexDelimeter > 0) then
+			item = endToDisp.Substring(0,indexDelimeter);
+			endToDisp = endToDisp.Substring(indexDelimeter+1);
+		else
+			item = endToDisp;
+		endif;
+
+
+		'indexDelimeter = endToDisp.IndexOf(",");
+		tempData = item.IndexOf(",");
+		if(tempData > 0) then
+			'First element = ItemId
+			itemId = item.Substring(0,tempData);
+			tempStr = item.Substring(tempData+1); 'sarebbe la stinga che rimane a destra del |
+			tempData = tempStr.IndexOf(","); 'sarebbe il nuovo index delimiter
+			if(tempData > 0) then
+				'Second element
+				'tempStr = tempStr.Substring(tempData +1);		
+				'tempData = tempStr.IndexOf(",");
+				'if(tempData > 0) then
+				'	'third element
+					qtyStr = tempStr.Substring(0,tempData);
+					finalQty = System.Double.Parse(qtyStr,new System.Globalization.CultureInfo("en-US"));
+					if Me.FirstEndToDispDone then 'in the firts end to disp we need to subtract the initial quantity
+						qtyToAdd = finalQty; '- Me.QtyProd;
+					else
+						qtyToAdd = finalQty; '- Me.QtyProd-Me.Dispersore.QtaStart;
+						Me.FirstEndToDispDone = true;
+					endif;
+					
+					if(qtyToAdd > 0) then
+						Me.ProdCapability.JobExec.JobPos0.QtyProd = qtyToAdd;
+						LogMessage("Qty to add = "+Me.ProdCapability.JobExec.JobPos0.QtyProd);
+					else
+						LogWarning("qty to add <= 0: "+qtyToAdd);
+					endif;
+					tempData = tempStr.IndexOf(",");
+				'else
+				'	LogError("No qty in the ENDDOSE Tag. ENDDOSE = "+item);
+				'endif;
+			else
+				LogError("No qty in the ENDDOSE Tag. ENDDOSE = "+item);
+			endif;
+		else
+			LogError("No qty in the ENDDOSE Tag. ENDDOSE= "+item);
+		endif;
+
+		connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+		connection.Open();
+
+		'LM_UpdatejobExt_EndDoseQty
+		commandText = "EXECUTE [dbo].LM_UpdatejobExt_EndDoseQty @st1,@int,@seq,@num"; 
+		LogMessage("***QUERY LM_UpdatejobExt_EndDoseQty: " + commandText);
+
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		param1=command.Parameters.Add("@st1", System.Data.SqlDbType.NChar, 50);
+		param2 = command.Parameters.Add("@int", System.Data.SqlDbType.Int,4);	
+		param3 = command.Parameters.Add("@seq", System.Data.SqlDbType.Int,4);	
+		param4 = command.Parameters.Add("@num", System.Data.SqlDbType.Decimal);
+		param1.Value = Me.UI.Wo;
+		param2.Value= Me.UI.Operation;
+		param3.Value= Me.ProdCapability.JobExec.SequenceNumber;
+		param4.Value = qtyToAdd;
+		param4.Precision=10;
+		param4.Scale =3;
+		
+		command.Prepare();
+		command.ExecuteNonQuery();
+
+		connection.Close();
+		connection.Dispose();
+	endwhile;
+catch
+	LogError(error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

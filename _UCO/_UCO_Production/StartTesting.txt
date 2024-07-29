@@ -1,0 +1,12 @@
+Me.StartTesting = false;
+
+if(MyContainer.ProdCapability.JobExec.JobPos0.CurOperId <> "" or MyContainer.ProdCapability.JobExec.JobPos0.CurSeqNo <> "0" or MyContainer.ProdCapability.JobExec.JobPos0.CurWoId <> "") then
+	LogMessage("Start testing and production job active");
+	MyContainer.Testing.MES.TriggerPauseTesting = 1;
+else
+	LogMessage("Start testing and no job active");
+	MyContainer.Testing.MES.TriggerPauseTesting = 2;
+endif;
+
+MyContainer.Status = 3;
+MyContainer.ProductionState = 0;

@@ -1,0 +1,89 @@
+LogMessage(Me.Tagname + " Start To Disp: "+Me.SCADA.STARTTODISP);
+ 
+dim i as integer;
+dim startToDisp as string;
+dim tempData as integer;
+dim indexDelimeter as integer;
+dim itemId as string;
+dim qtyStr as string;
+dim item as string;
+dim bomIndex as integer;
+dim woId as string;
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+dim commandText as string;
+dim tempStr as string;
+ 
+indexDelimeter = 0;
+startToDisp = Me.SCADA.STARTTODISP;
+Me.SCADA.STARTTODISP = "";
+ 
+try
+	while indexDelimeter >= 0
+		indexDelimeter = startToDisp.IndexOf("|");
+		if(indexDelimeter > 0) then
+			item = startToDisp.Substring(0,indexDelimeter);
+			startToDisp = startToDisp.Substring(indexDelimeter+1);
+		else
+			item = startToDisp;
+		endif;
+ 
+		'indexDelimeter = endToDisp.IndexOf(",");
+		tempData = item.IndexOf(",");
+		if(tempData > 0) then
+			'First element = ItemId
+			itemId = item.Substring(0,tempData);
+			tempStr = item.Substring(tempData+1); 'sarebbe la stinga che rimane a destra del |
+			tempData = tempStr.IndexOf(","); 'sarebbe il nuovo index delimiter
+			if(tempData > 0) then
+				'Second element
+				tempStr = tempStr.Substring(tempData +1);		
+				tempData = tempStr.IndexOf(",");
+				if(tempData > 0) then
+					'third element
+					qtyStr = tempStr.Substring(0,tempData);
+				else
+					LogError("No qty in the STARTTODISP Tag. STARTTODISP = "+item);
+				endif;
+ 
+			else
+				LogError("No qty in the STARTTODISP Tag. STARTTODISP = "+item);
+			endif;
+		else
+			LogError("No qty in the STARTTODISP Tag. STARTTODISP = "+item);
+		endif;
+ 
+		'update actual Bom position
+		connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+		connection.Open();
+		woId = Me.UI.Wo;
+		commandText = "EXECUTE [dbo].LM_CheckBomItems '"+ woId +"','" + itemId +"',1";
+ 
+		LogMessage("***QUERY LM_CheckBomItems: " + commandText);
+ 
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		reader = command.ExecuteReader();
+		if(reader.HasRows) then
+			reader.Read();
+			Me.SCADA.ActualBomPos = reader("bom_pos");
+		else
+			LogError("STARTTODISP No bom_pos for wo_id = "+woId);
+		endif;
+		reader.Close();
+		connection.Close();
+		connection.Dispose();
+ 
+		Me.UI.ActualStart = System.DateTime.Now;
+		Me.Status = 1;
+		if(Me.ProdCapability.JobExec.JobPos0.CurWoId == "") then
+			Me.ProdCapability.StartJob = true;
+		endif;
+	endwhile;
+catch
+	LogError(error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

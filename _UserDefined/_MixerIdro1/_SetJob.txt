@@ -1,0 +1,18 @@
+'Set Job as Wo + Operation
+wo = Me.UI.Wo;
+if(wo.Trim() <> "" and Me.UI.Operation <> 0) then
+	Me.UI.Job = Me.UI.Wo+" - "+Me.UI.Operation;
+else
+	Me.UI.Job = "";
+endif;
+
+wo = wo.Trim();
+if(wo == "") then
+	Me.Logics.UI.PlacedFromWingman = "Collapsed";
+else
+	if(wo <> Me.Logics.UI.WoPlacedFromHMI) then
+		Me.Logics.UI.PlacedFromWingman = "Visible";
+	else
+		Me.Logics.UI.PlacedFromWingman = "Collapsed";
+	endif;
+endif;

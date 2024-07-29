@@ -1,0 +1,9 @@
+Me.StopTesting = false;
+
+Me.Status = 0;
+
+Me.ReasonCode = "";
+
+Me.TriggerEndTesting = 1;
+
+Me.TriggerPauseJob= true;

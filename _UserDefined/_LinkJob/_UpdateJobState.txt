@@ -1,0 +1,27 @@
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+dim commandText as string;
+dim jobHistory as integer;
+
+try	
+	if Me.UpdateJobState > 0 then
+
+		connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+		connection.Open();
+
+		'LM_UpdateJobState
+		commandText = "EXEC LM_UpdateJobState  '" + Me.UI.Wo + "'," + Me.UI.Operation +"," + Me.UpdateJobState;
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		LogMessage("***QUERY LM_UpdateJobState: " + commandText + "- " + Me.UpdateJobState);
+		command.ExecuteNonQuery();
+
+		Me.UpdateJobState= -1;
+	endif;
+catch
+	LogError(error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

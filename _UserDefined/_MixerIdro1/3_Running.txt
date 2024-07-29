@@ -1,0 +1,20 @@
+LogMessage(Me.Tagname);
+
+Me.MachineStatus.BeforeStartProd = 0;
+
+'job_history
+Me.InsertInJobHistory=1;
+
+if(Me.ProductionState == 1) then
+	Me.UI.ActualStart = System.DateTime.Now;
+	Me.Status = 1;
+
+	Me.ProductionState = 2;
+elseif(Me.Status == 0) then
+	Me.UI.ActualStart = System.DateTime.Now;
+	Me.Status = 1;
+endif;
+
+'LM_UpdateJobState
+Me.UpdateJobState=3;
+

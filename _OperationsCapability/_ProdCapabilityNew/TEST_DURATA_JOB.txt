@@ -1,0 +1,24 @@
+Me.TRIGGER_TEST = false;
+
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+dim commandText as string;
+dim state_cd as integer;
+
+try
+
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	connection.Open();
+	commandText = "EXECUTE[LM_SanMarco_MES].[dbo].LM_JobDuration 'OPVE0012308756',10,4";
+	
+	LogMessage("***End Job - STORED PROCEDURE JobDuration: " + commandText);
+	
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	command.ExecuteNonQuery();
+	connection.Close();
+
+catch
+	LogError(error);
+endtry;
+

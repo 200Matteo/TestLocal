@@ -1,0 +1,13 @@
+LogMessage("ResetUITags ");
+
+if Me.MachineStatus.Status ==0 then
+	Me.UI.Wo = "";
+	Me.UI.Operation = 0;
+	Me.UI.Item = "";
+	Me.UI.Lot = "";
+	Me.QtyProd=0;
+	Me.SequenceNumber=0;
+	Me.UI.QtyReq=0;
+elseif (Me.MachineStatus.Status == 5 or Me.MachineStatus.Status ==6) then
+	Me.MachineStatus.Status =0;
+endif;

@@ -1,0 +1,8 @@
+'Set Job as Wo + Operation
+dim wo as string;
+wo = Me.UI.Wo;
+if(wo.Trim() <> "" and Me.UI.Operation <> 0) then
+	Me.UI.Job = Me.UI.Wo+" - "+Me.UI.Operation;
+else
+	Me.UI.Job = "";
+endif;

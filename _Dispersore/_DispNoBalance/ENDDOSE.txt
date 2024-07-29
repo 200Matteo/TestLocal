@@ -1,0 +1,110 @@
+LogMessage(Me.Tagname + " End to disp: "+Me.SCADA.ENDDOSE+" - Wo = "+Me.UI.Wo);
+
+indexDelimeter=0;
+endToDisp = Me.SCADA.ENDDOSE;
+qtyToAdd = 0;
+
+Me.SCADA.ENDDOSE = "";
+
+if(Me.UI.Wo<> "") then
+	try
+		while indexDelimeter >= 0
+			indexDelimeter = endToDisp.IndexOf("|");
+			if(indexDelimeter > 0) then
+				item = endToDisp.Substring(0,indexDelimeter);
+				endToDisp = endToDisp.Substring(indexDelimeter+1);
+			else
+				item = endToDisp;
+			endif;
+
+
+			'indexDelimeter = endToDisp.IndexOf(",");
+			tempData = item.IndexOf(",");
+			if(tempData > 0) then
+				'First element = ItemId
+				itemId = item.Substring(0,tempData);
+				tempStr = item.Substring(tempData+1); 'sarebbe la stinga che rimane a destra del |
+				tempData = tempStr.IndexOf(","); 'sarebbe il nuovo index delimiter
+				if(tempData > 0) then
+					'Second element
+					'tempStr = tempStr.Substring(tempData +1);		
+					'tempData = tempStr.IndexOf(",");
+					'if(tempData > 0) then
+					'	'third element
+						qtyStr = tempStr.Substring(0,tempData);
+
+						finalQty = System.Double.Parse(qtyStr,new System.Globalization.CultureInfo("en-US"));
+
+						qtyToAdd = qtyToAdd+finalQty;
+						tempData = tempStr.IndexOf(",");
+					'else
+					'	LogError("No qty in the ENDDOSE Tag. ENDDOSE = "+item);
+					'endif;
+				else
+					LogError("No qty in the ENDDOSE Tag. ENDDOSE = "+item);
+				endif;
+			else
+				LogError("No qty in the ENDDOSE Tag. ENDDOSE = "+item);
+			endif;
+
+			'get the actual working bom pos
+			connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+			connection.Open();
+			
+			woId = Me.UI.Wo;
+			commandText = "EXECUTE [dbo].LM_CheckBomItems '"+ woId +"','" + itemId +"',2"; 
+
+			LogMessage("***QUERY LM_CheckBomItems: " + commandText);
+
+			command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+			reader = command.ExecuteReader();
+			
+			if(reader.HasRows) then
+				reader.Read();
+				Me.SCADA.ActualBomPos = reader("bom_pos");
+
+			else
+				LogError("No bom_pos for wo_id = "+woId);
+			endif;
+			reader.Close();
+			
+			
+			'LM_UpdatejobExt_EndDoseQty
+			commandText = "EXECUTE [dbo].LM_UpdatejobExt_EndDoseQty @st1,@int,@seq,@num"; 
+			LogMessage("***QUERY LM_UpdatejobExt_EndDoseQty: " + commandText);
+
+			command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+			param1=command.Parameters.Add("@st1", System.Data.SqlDbType.NChar, 50);
+			param2 = command.Parameters.Add("@int", System.Data.SqlDbType.Int,4);	
+			param3 = command.Parameters.Add("@seq", System.Data.SqlDbType.Int,4);	
+			param4 = command.Parameters.Add("@num", System.Data.SqlDbType.Decimal);
+			param1.Value = Me.UI.Wo;
+			param2.Value= Me.UI.Operation;
+			param3.Value= Me.ProdCapability.JobExec.SequenceNumber;
+			param4.Value = qtyToAdd;
+			param4.Precision=10;
+			param4.Scale =3;
+
+			command.Prepare();
+			command.ExecuteNonQuery();
+
+			connection.Close();
+			connection.Dispose();
+		endwhile;
+
+		if(Me.ProdCapability.JobExec.JobPos0.CurWoId == "") then
+			Me.Waiting.Status = true;
+			Me.Waiting.AddQty = Me.Waiting.AddQty + qtyToAdd;
+		else
+			Me.ProdCapability.Counter = qtyToAdd;
+			LogMessage("Qty to add to OCO = "+Me.ProdCapability.Counter);
+			Me.ProdCapability.AddQty = true;
+		endif;
+	catch
+		LogError(error);
+		if(connection.State == System.Data.ConnectionState.Open) then
+			connection.Close();
+			connection.Dispose();
+		endif;
+	endtry;
+endif;

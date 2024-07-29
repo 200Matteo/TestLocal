@@ -1,0 +1,9 @@
+Me.StopTesting = false;
+
+MyContainer.Status = 0;
+
+Me.ReasonCode = "";
+
+MyContainer.Testing.MES.TriggerEndTesting = 1;
+
+MyContainer.ProdCapability.PauseJob = true;

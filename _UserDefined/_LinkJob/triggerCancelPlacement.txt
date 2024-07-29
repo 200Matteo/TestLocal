@@ -1,0 +1,12 @@
+LogMessage("TriggerCancelPalcement ");
+
+Me.UI.Item = "";
+Me.UI.Lot = "";
+Me.UI.QtyReq = 0;
+Me.UI.Wo = "";
+Me.UI.ItemColor = "";
+Me.UI.ItemSize = "";
+Me.UI.ItemSpecWeight = "";
+Me.UI.Disp = "";
+
+Me.Trigger.CancelPlacement = false;

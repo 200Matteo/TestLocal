@@ -1,0 +1,31 @@
+dim bomPos as integer;
+bomPos = MyContainer.SCADA.ActualBomPos;
+
+dim lastBomIndex as integer;
+dim connection as System.Data.SqlClient.SqlConnection;
+dim command as System.Data.SqlClient.SqlCommand;
+dim reader as System.Data.SqlClient.SqlDataReader;
+try
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	connection.Open();
+	command = new System.Data.SqlClient.SqlCommand("EXEC LM_GetLastBomIndex '"+MyContainer.UI.Wo+"'", connection);
+	reader = command.ExecuteReader();
+
+	while reader.Read()
+		LogMessage(reader("lastBomIndex"));
+		lastBomIndex = reader("lastBomIndex");
+	endwhile;
+	reader.Close();
+	connection.Close();
+	connection.Dispose();
+
+	if(MyContainer.UI.Wo == "") then
+		Me.UI.IsLastBomIdx = "Collapsed";
+	elseif(lastBomIndex == bomPos) then
+		Me.UI.IsLastBomIdx = "Visible";
+	else
+		Me.UI.IsLastBomIdx = "Collapsed";
+	endif;
+catch
+	LogError("Error getting last bom index "+error);
+endtry;

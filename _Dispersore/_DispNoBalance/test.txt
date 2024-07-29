@@ -1,0 +1,52 @@
+qtyToAdd = 0;
+indexDelimeter=0;
+endToDisp = Me.Test;
+Me.Test = "";
+try
+	while indexDelimeter >= 0
+		indexDelimeter = endToDisp.IndexOf("|");
+		if(indexDelimeter > 0) then
+			item = endToDisp.Substring(0,indexDelimeter);
+			endToDisp = endToDisp.Substring(indexDelimeter+1);
+		else
+			item = endToDisp;
+		endif;
+
+
+		'indexDelimeter = endToDisp.IndexOf(",");
+		tempData = item.IndexOf(",");
+		if(tempData > 0) then
+			'First element = ItemId
+			itemId = item.Substring(0,tempData);
+			tempStr = item.Substring(tempData+1); 'sarebbe la stinga che rimane a destra del |
+			tempData = tempStr.IndexOf(","); 'sarebbe il nuovo index delimiter
+			if(tempData > 0) then
+				'Second element
+				'tempStr = tempStr.Substring(tempData +1);		
+				'tempData = tempStr.IndexOf(",");
+				'if(tempData > 0) then
+				'	'third element
+					qtyStr = tempStr.Substring(0,tempData);
+
+					finalQty = System.Double.Parse(qtyStr,new System.Globalization.CultureInfo("en-US"));
+
+					qtyToAdd = qtyToAdd+finalQty;
+					tempData = tempStr.IndexOf(",");
+				'else
+				'	LogError("No qty in the ENDDOSE Tag. ENDDOSE = "+item);
+				'endif;
+			else
+				LogError("No qty in the ENDDOSE Tag. ENDDOSE = "+item);
+			endif;
+		else
+			LogError("No qty in the ENDDOSE Tag. ENDDOSE = "+item);
+		endif;
+	endwhile;
+	LogMessage(qtyToAdd);
+catch
+	LogError(error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

@@ -1,0 +1,9 @@
+if(Me.TriggerEndTesting == 1) then
+	if(Me.UI.Operation <> "" and Me.SequenceNumber <> 0 and Me.UI.Wo <> "") then
+		LogMessage(Me.Tagname);
+		Me.Trigger.SetUIData = true;
+		Me.ProductionState = 1;
+		Me.TriggerEndTesting = 0;
+	endif;
+endif;
+

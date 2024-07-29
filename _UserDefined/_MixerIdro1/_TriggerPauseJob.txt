@@ -1,0 +1,11 @@
+'job (oco) pause
+Me.TriggerPauseJob = false;
+
+try
+
+	'LM_UpdateJobState
+	Me.UpdateJobState=5;
+
+catch
+	LogError(error);
+endtry;

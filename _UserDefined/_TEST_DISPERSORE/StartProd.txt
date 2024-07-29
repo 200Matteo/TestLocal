@@ -1,0 +1,40 @@
+LogMessage(Me.Tagname+" Start Prod = "+Me.SCADA.STARTPROD);
+ 
+dim i as integer;
+dim startProd as string;
+dim len as integer;
+ 
+startProd = Me.SCADA.STARTPROD;
+Me.SCADA.STARTPROD = "";
+ 
+len = startProd.Length;
+ 
+'reset bom item data
+Me.SCADA.ActualBomPos = 0;
+for i = 1 to 60
+	Me.SCADA.STARTDOSE.Item[i] = "";
+	Me.SCADA.STARTDOSE.Qty[i] = 0;
+	Me.SCADA.ENDDOSE.Qty[i] = 0;
+next;
+ 
+i = StringInString(startProd, ",", 1, 0);
+ 
+LogMessage("StartProd: " + startProd + " - i: " + i+ " - len:" + len);
+ 
+Me.FirstEndToDispDone = false; 'it will be set to true at the first end to disp in order tu subtract the initial quantity
+ 
+if len == i then
+	Me.Dispersore.QtaStart=0;
+else
+	Me.Dispersore.QtaStart= System.Convert.ToDouble(StringRight(startProd, StringLen(startProd)-i));
+endif;
+ 
+Me.Dispersore.LastQty = Me.Dispersore.QtaStart;
+Me.Dispersore.ActualOrderQty = Me.Dispersore.QtaStart;
+ 
+if(Me.ProdCapability.JobExec.JobPos0.CurWoId == "") then
+	Me.WingmanPlaced = true;
+	Me.Trigger.SetUIData = true;
+else
+	Me.WingmanPlaced = false;
+endif;

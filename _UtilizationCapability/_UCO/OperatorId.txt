@@ -1,0 +1,1 @@
+Me.Spare2 = Me.Operator;

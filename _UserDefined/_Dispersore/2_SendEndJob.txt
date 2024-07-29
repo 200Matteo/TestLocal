@@ -1,0 +1,14 @@
+dim woId as string;
+dim operId as string;
+dim operStr as string;
+woId = Me.ProdCapability.JobExec.JobPos0.CurWoId;
+operId = Me.ProdCapability.JobExec.JobPos0.CurOperId;
+operStr = Me.UI.Operation;
+
+LogMessage(Me.Tagname+" Check end job - wo Id = "+woId+" - UI Wo Id = "+ Me.UI.Wo+" - UI Oper Id = "+operStr+" - operId = "+operId);
+
+if((woId.Trim() <> "" and woId.Trim() <> Me.UI.Wo) or (operId.Trim() <> "" and operId.Trim() <> operStr)) then
+	Me.ProdCapability.EndJob = true;
+else 
+	Me.MachineStatus.Status = 0;
+endif;

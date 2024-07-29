@@ -1,0 +1,58 @@
+'e.g. ENDPROD = "Dispersore 4,6950"
+'la quantit� fatta � data dalla differenza delle due quantit�
+endProd = Me.SCADA.ENDPROD;
+Me.SCADA.ENDPROD = "";
+try 
+	len = endProd.Length;
+
+	i = StringInString(endProd, ",", 1, 0);
+
+	LogMessage("EndProd: " + endProd + " - i: " + i + " - len:" + len);
+
+	if i == len then 'non ho la quantit� dopo la virgola in SCADA.ENDPROD
+		Me.Dispersore.QtaEnd= 0;
+	else
+		Me.Dispersore.QtaEnd= System.Convert.ToDouble(StringRight(endProd, StringLen(endProd)-i));
+	endif;
+
+	qtyDisp = Me.Dispersore.QtaStart-Me.Dispersore.QtaEnd;
+
+	'LM_InsertInJob_attr: update the table jobattr in order to indicate that we can procede with packaging
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	connection.Open();
+
+	commandText = "EXEC LM_InsertInJob_attr '" +  Me.UI.Wo + "'," + Me.UI.Operation +"," + Me.ProdCapability.JobExec.SequenceNumber;
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	LogMessage("***QUERY LM_UpdateJobHistory: " + commandText);
+	command.ExecuteNonQuery();
+
+	entity = Me.Tagname;
+	commandText = "EXECUTE [dbo].[LM_Update_MachinePlacement] '" + entity +"'" ; 
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	command.ExecuteNonQuery();
+	
+	if(Me.Log.Enable) then
+		LogMessage("***QUERY EndProdAfterQtyAdded - LM_Update_MachinePlacement: " + commandText);
+	endif;
+
+	connection.Close();
+	connection.Dispose();
+
+	if(Me.Log.Enable) then
+		LogMessage("Final order qty at end prod = "+qtyDisp);
+	endif;
+	'End Job
+	Me.Trigger.EndJob = true;
+
+	'idle state if running state
+	if(Me.Status == 1) then
+		Me.Status = 0;
+	endif;
+
+catch
+	LogError("SCADA.ENDPROD: " + error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

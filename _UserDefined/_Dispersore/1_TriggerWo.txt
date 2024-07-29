@@ -1,0 +1,7 @@
+Me.Trigger.SetWo = false;
+
+LogMessage(Me.Tagname+" - Start check machine status");
+
+'Set Wo from Homepage
+
+Me.MachineStatus.Status = 1;

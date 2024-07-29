@@ -1,0 +1,32 @@
+Me.Trigger.CancelPlacement = false;
+try
+	Me.UI.Item = "";
+	Me.UI.Lot = "";
+	Me.UI.QtyReq = 0;
+	Me.UI.Wo = "";
+
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+	connection.Open();
+	entity = Me.Tagname;
+	commandText = "EXECUTE [dbo].[LM_Update_MachinePlacement] '" + entity +"'" ; 
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	command.ExecuteNonQuery();
+	
+	if(Me.Log.Enable) then
+		LogMessage("***QUERY CancelPlacement - LM_Update_MachinePlacement: " + commandText);
+	endif;
+	connection.Close();
+	connection.Dispose();
+
+	'end job
+	if(Me.ProdCapability.JobExec.JobPos0.CurWoId <> "") then
+		Me.Trigger.EndJob = true;
+	endif;
+
+catch
+	LogError("CancelPlacement: " + error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

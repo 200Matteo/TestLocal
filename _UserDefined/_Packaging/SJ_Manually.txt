@@ -1,0 +1,8 @@
+LogMessage(Me.Tagname);
+
+Me.UI.ActualStart = System.DateTime.Now;
+Me.UCO.ReasonCode = "";
+
+Me.MachineStatus.BeforeStartProd = 1;
+
+Me.Trigger.StartProdManually = false;

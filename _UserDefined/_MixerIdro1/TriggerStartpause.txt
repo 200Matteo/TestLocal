@@ -1,0 +1,20 @@
+LogMessage("Startpause ");
+
+'util (UCO) pause
+Me.StartPause = false;
+
+try
+	'job_history
+
+	Me.MachineStatus.Status = 5;
+
+	Me.InsertInJobHistory=3;
+
+	Me.Status = 0;
+
+	Me.TriggerPauseJob= true;
+
+catch
+	LogError("Exception updating Job Duration: "+error);
+	
+endtry;

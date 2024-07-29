@@ -1,0 +1,2 @@
+LogWarning(Me.Tagname+" - waiting end job, reset status");
+Me.ProdCapability.JobExec.ResetCmd = true;

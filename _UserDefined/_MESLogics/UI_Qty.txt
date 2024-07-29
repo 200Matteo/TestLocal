@@ -1,0 +1,34 @@
+wo = MyContainer.UI.Wo;
+if(wo <> Me.Last.Wo) then
+	'Initialize Qty
+	Me.UI.Qty = 0;
+	Me.Last.Wo = wo;
+endif;
+wo = wo.Trim();
+if(wo == "") then
+	Me.UI.PlacedFromWingman = "Collapsed";
+	Me.UI.QtyReq = 0;
+else
+	try
+		entity = MyContainer.Tagname;
+		connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+		connection.Open();
+		commandText = "EXECUTE [dbo].[LM_GetOrderDetailsData] '"+wo+"',0,'" + entity + "'" ;
+			 
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		reader = command.ExecuteReader();
+
+		if(reader.HasRows) then
+			reader.Read();
+			Me.UI.QtyReq = reader("req_qty");
+		endif;
+		reader.Close();
+	catch
+		LogError("Error getting order data "+error);
+	endtry;
+	if(wo <> Me.UI.WoPlacedFromHMI) then
+		Me.UI.PlacedFromWingman = "Visible";
+	else
+		Me.UI.PlacedFromWingman = "Collapsed";
+	endif;
+endif;

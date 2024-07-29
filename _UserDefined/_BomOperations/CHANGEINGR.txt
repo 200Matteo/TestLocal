@@ -1,0 +1,84 @@
+changeingr = MyContainer.SCADA.CHANGEINGR;
+LogMessage(Me.Tagname+" - CHANGEINGR: "+changeingr);
+MyContainer.SCADA.CHANGEINGR = "";  ' item_id,bom_pos|item,bom_pos
+
+indexDelimeter = 0;
+try
+	while indexDelimeter >= 0
+		indexDelimeter = changeingr.IndexOf("|");
+		if(indexDelimeter > 0) then
+			item = changeingr.Substring(0,indexDelimeter);
+			changeingr = changeingr.Substring(indexDelimeter+1);
+		else
+			item = changeingr;
+		endif;
+
+		'item = item_id,bom_pos,qta
+		tempData = item.IndexOf(",");
+		if(tempData > 0) then
+			'First element = ItemId
+			itemId = item.Substring(0,tempData);
+			LogMessage("CHANGEINGR itemId: " + itemId);
+			tempStr = item.Substring(tempData+1); 'sarebbe la stinga che rimane a destra della ,--> qta,bom_pos
+			tempData = tempStr.IndexOf(","); 'sarebbe il nuovo index delimiter
+			LogMessage("CHANGEINGR: " +tempStr + "- index: " + tempData);
+			if(tempData > 0) then
+				'Second element
+				qtyStr = tempStr.Substring(0,tempData);
+				qta = System.Double.Parse(qtyStr.Replace(".",","));
+				
+				tempStr = tempStr.Substring(tempData +1);	'sarebbe la stinga che rimane a destra della ,--> bom_pos
+	
+				if(tempStr<>"") then
+					'third element
+					bom_pos = tempStr;
+					bom_pos_int = Int(bom_pos)*10;
+					LogMessage("CHANGEINGR bompos: " + bom_pos_int);	
+				else
+					LogError("No qty in the CHANGEINGR Tag. CHANGEINGR = "+item);
+				endif;
+			else
+				LogError("No bom_pos in the CHANGEINGR Tag. CHANGEINGR = "+item);
+			endif;
+		else
+			LogError("No itemid in the CHANGEINGR Tag. CHANGEINGR = "+item);
+		endif;
+
+		woId = MyContainer.SCADA.WoId;
+
+		if bom_pos <> "" then
+			
+			connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+			connection.Open();
+			commandText = "LM_Insert_Bom_Change";
+			command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+			command.CommandType = System.Data.CommandType.StoredProcedure;
+			MachineIdPar = command.Parameters.Add("@MachineId", System.Data.SqlDbType.NVarChar, 40);
+			WoIdPar = command.Parameters.Add("@WoId", System.Data.SqlDbType.NVarChar, 40);
+			BomPosPar = command.Parameters.Add("@BomPos", System.Data.SqlDbType.Int);
+			ItemIdPar = command.Parameters.Add("@ItemId", System.Data.SqlDbType.NVarChar, 40);
+			QtyPar = command.Parameters.Add("@Qty", System.Data.SqlDbType.Float);
+			TypePar = command.Parameters.Add("@Type", System.Data.SqlDbType.SmallInt);
+
+			MachineIdPar.Value = MyContainer.Tagname;
+			WoIdPar.Value = woId;
+			BomPosPar.Value = bom_pos_int;
+			ItemIdPar.Value = itemId;
+			QtyPar.Value = qta*100;			'on MES DB are stored *100 (as in Sage)
+			TypePar.Value = 1;
+			command.ExecuteNonQuery();
+
+			connection.Close();
+			connection.Dispose();
+		else
+			LogError("Exception Me.SCADA.CHANGEINGR bom_pos= "+ bom_pos);
+		endif;
+	endwhile;
+catch
+
+	LogError("Exception Me.SCADA.CHANGEINGR: "+error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;

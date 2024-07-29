@@ -1,0 +1,15 @@
+if(Me.MES.TriggerPauseTesting == 3) then
+	if(MyContainer.ProdCapability.JobExec.JobPos0.CurOperId <> "" and MyContainer.ProdCapability.JobExec.JobPos0.CurSeqNo <> 0 and MyContainer.ProdCapability.JobExec.JobPos0.CurWoId <> "") then
+		LogMessage(Me.Tagname);
+		Me.MES.TriggerPauseTesting = 0;
+	endif;
+endif;
+
+if(Me.MES.TriggerEndTesting == 1) then
+	if(MyContainer.ProdCapability.JobExec.JobPos0.CurOperId == "" and MyContainer.ProdCapability.JobExec.JobPos0.CurSeqNo == 0 and MyContainer.ProdCapability.JobExec.JobPos0.CurWoId == "") then
+		LogMessage(Me.Tagname);
+		MyContainer.Trigger.SetUIData = true;
+		MyContainer.ProductionState = 1;
+		Me.MES.TriggerEndTesting = 0;
+	endif;
+endif;

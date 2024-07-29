@@ -1,0 +1,6 @@
+MyContainer.Status = 0;
+
+if(MyContainer.ProdCapability.JobExec.JobPos0.CurWoId <> "")then
+	LogMessage("Job running: "+MyContainer.ProdCapability.JobExec.JobPos0.CurWoId+" - Oper id = "+MyContainer.ProdCapability.JobExec.JobPos0.CurOperId); 
+	MyContainer.ProdCapability.PauseJob = true;
+endif;

@@ -1,0 +1,66 @@
+LogMessage(Me.Tagname + " Manual: "+Me.SCADA.MANUAL);
+
+dim i as integer;
+dim manual as string;
+dim tempData as integer;
+dim indexDelimeter as integer;
+dim itemId as string;
+dim qtyStr as string;
+dim item as string;
+dim bomIndex as integer;
+
+indexDelimeter = 0;
+manual = Me.SCADA.MANUAL;
+Me.SCADA.MANUAL = "";
+
+try
+	while indexDelimeter >= 0
+		indexDelimeter = manual.IndexOf("|");
+		if(indexDelimeter > 0) then
+			item = manual.Substring(0,indexDelimeter);
+			manual = manual.Substring(indexDelimeter+1);
+		else
+			item = manual;
+		endif;
+
+		tempData = item.IndexOf(",");
+
+		itemId = item.Substring(0,tempData);
+		item = item.Substring(tempData+1);
+		tempData = item.IndexOf(",");
+		'if there are others data after the quantity, pick only the quantity
+		qtyStr = item.Substring(0,tempData);	
+		dim qty as double;
+		qty = System.Decimal.Parse(qtyStr,new System.Globalization.CultureInfo("en-US"));
+		LogMessage("Qty Str = "+qtyStr);
+		bomIndex = item.Substring(tempData+1);
+
+		'LM_InsertInJob_attr: update the table jobattr in order to indicate that we can procede with packaging
+		connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+		connection.Open();
+
+		commandText = "EXEC LM_InsertManualAdd @wo_id,@oper_id,@item_id,@bom_pos,@qty";
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		
+		woPar = command.Parameters.Add("@wo_id",System.Data.SqlDbType.nvarchar,40);
+		woPar.Value = Me.UI.Wo;
+		operPar = command.Parameters.Add("@oper_id",System.Data.SqlDbType.nvarchar,40);
+		operPar.Value = Me.UI.Operation;
+		itemPar = command.Parameters.Add("@item_id",System.Data.SqlDbType.nvarchar,40);
+		itemPar.Value = itemId;
+		bomPosPar = command.Parameters.Add("@bom_pos",System.Data.SqlDbType.int);
+		bomPosPar.Value = bomIndex; 
+		qtyPar = command.Parameters.Add("@qty",System.Data.SqlDbType.decimal);
+		qtyPar.Scale = 3;
+		qtyPar.Precision = 10;
+		qtyPar.Value = qty;
+
+		command.ExecuteNonQuery();
+
+		connection.Close();
+		connection.Dispose();
+		
+	endwhile;
+catch
+	LogError(error);
+endtry;

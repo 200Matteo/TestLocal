@@ -1,0 +1,9 @@
+'Add the qty in waiting state
+dim qty as double;
+qty = Me.Waiting.AddQty;
+LogMessage(Me.Tagname+" - Qty to add from waiting state: "+qty);
+Me.Waiting.Status = false;
+Me.ProdCapability.Counter = qty;
+Me.Waiting.AddQty = 0;
+LogMessage("Qty to add to OCO = "+Me.ProdCapability.Counter);
+Me.ProdCapability.AddQty = true;

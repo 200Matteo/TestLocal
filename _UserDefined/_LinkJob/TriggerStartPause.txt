@@ -1,0 +1,35 @@
+LogMessage("Startpause ");
+
+Me.Trigger.StartPause = false;
+
+try
+	Me.MachineStatus.Status = 5;
+	Me.InsertInJobHistory=3;
+	Me.Status = 0;
+	Me.TriggerPauseJob= true;
+
+	connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+
+	try
+		connection.Open();
+		commandText = "EXEC LM_JobDurationPkg '" + Me.UI.Wo + "'";
+
+		if(Me.Log.Enable) then
+			LogMessage("***Pause Job - STORED PROCEDURE JobDuration: " + commandText);
+		endif;
+
+		command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+		command.ExecuteNonQuery();
+		connection.Close();
+		connection.Dispose();
+	catch
+		LogError("Exception updating Job Duration: "+error);
+		if(connection.State == System.Data.ConnectionState.Open) then
+			connection.Close();
+			connection.Dispose();
+		endif;
+	endtry;
+
+catch
+	LogError("Trigger start pause: "+error);
+endtry;

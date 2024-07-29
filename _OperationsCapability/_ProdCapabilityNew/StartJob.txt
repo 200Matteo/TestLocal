@@ -1,0 +1,36 @@
+Me.StartJob = false;
+
+'using the information given by the interfsce, we prepare the job execution
+connection = new System.Data.SqlClient.SqlConnection(ERP.MESConnectionString);
+try
+	connection.Open();
+	commandText = "select wo_id from [dbo].[vw_job_data] where run_ent_name = '"+MyContainer.Tagname+"' and state_cd = 3";
+
+	LogMessage("***QUERY state_cd: " + commandText);
+
+	command = new System.Data.SqlClient.SqlCommand(commandText, connection);
+	reader = command.ExecuteReader();
+
+	if(reader.HasRows) then
+		exists = true;
+	else
+		exists = false;
+	endif;
+
+	reader.Close();
+
+	if (exists == false) then 'no job available
+		Me.JobExec.StartJobCmd = true;
+	else
+		LogError("Job present for entity "+MyContainer.Tagname+", job = "+Me.JobExec.JobPos0.CurWoId+" - "+Me.JobExec.JobPos0.CurOperId);
+	endif;
+	connection.Close();
+	connection.Dispose();
+catch
+	LogError(error);
+	if(connection.State == System.Data.ConnectionState.Open) then
+		connection.Close();
+		connection.Dispose();
+	endif;
+endtry;
+

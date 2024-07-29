@@ -1,0 +1,20 @@
+if(Me.LastQtyProd < Me.CicliDiPresa) then
+	if(Me.Status == 1) then	'Register qty only when the job is active
+		Me.QtyToAdd = Me.CicliDiPresa-Me.LastQtyProd;
+		Me.QtyProd = Me.QtyProd+Me.QtyToAdd;
+	endif;
+else
+	LogError("Quantity pallet < Last Qty already registered");
+endif;
+'used for delta mode
+Me.LastQtyProd = Me.CicliDiPresa;
+
+
+
+
+'if(Me.QtyProd < Me.PALL_TEST) then
+'	Me.QtyToAdd = Me.PALL_TEST-Me.QtyProd;
+'else
+'	LogError("Quantity pallet < Qty already registered");
+'endif;
+'Me.QtyProd = Me.PALL_TEST;

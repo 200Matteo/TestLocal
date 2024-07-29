@@ -1,0 +1,5 @@
+MyContainer.Status = 0;
+
+Me.ReasonCode = "";
+
+Me.StopDownTime = 0;

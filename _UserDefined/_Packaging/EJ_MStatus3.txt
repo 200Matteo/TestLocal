@@ -1,0 +1,14 @@
+LogMessage(Me.Tagname+ " - End Job after having added qty (ENDPROD value)");
+
+Me.ProdCapability.EndJob = true;
+
+Me.UI.Wo = "";
+Me.UI.Operation = 0;
+Me.UI.Item = "";
+Me.UI.Lot = "";
+Me.Status = 0;
+Me.UI.ItemColor = "";
+Me.UI.ItemSize = "";
+Me.UI.ItemSpecWeight = "";
+
+Me.MachineStatus.Status = 0;
